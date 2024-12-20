@@ -1,1 +1,7 @@
-# SecurityIncidentArchive
+# 国内インシデントアーカイブ
+- このリポジトリには日本国内で公表されたインシデント関連のリリースを保存します。
+- 保存対象はpiyokangoが確認した不正アクセスやシステム障害に起因したインシデント（事故）公表です。
+
+# このアーカイブに関する連絡先
+- Bluesky: @piyokango.bsky.social
+- X: @piyokango
