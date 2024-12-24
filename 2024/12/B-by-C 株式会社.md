@@ -2,7 +2,7 @@
 - 一部のお客様のクレジットカード決済失敗に関する決済環境の改善状況と今後の取り組みについて
 - 2024年12月19日
 - B-by-C 株式会社 
-https://core-fit.jp/newsinfo/info/post-9312/
+- https://core-fit.jp/newsinfo/info/post-9312/
 
 # 本文
 日頃よりCOREFITをご愛顧いただき、誠にありがとうございます。
