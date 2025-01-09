@@ -3,7 +3,7 @@
 - 2029年1月8日
 - ArchiTwin株式会社
 - https://archi-twin.com/news/release/news.php?id=440
-- 第1報：
+- 第1報：https://github.com/piyokango/SecurityIncidentArchive/blob/main/2024/12/ArchiTwin%E6%A0%AA%E5%BC%8F%E4%BC%9A%E7%A4%BE.md
 
 # 本文
 お客様各位
