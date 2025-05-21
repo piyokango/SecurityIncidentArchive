@@ -3,7 +3,7 @@
 - 2025年5月19日
 - NRS 株式会社
 - https://www.nrsgr.com/wp-content/uploads/2025/05/20250519.pdf
-- 第1報：
+- 第1報：https://github.com/piyokango/SecurityIncidentArchive/blob/main/2025/05/07_NRS%20%E6%A0%AA%E5%BC%8F%E4%BC%9A%E7%A4%BE.md
 
 # 本文
 平素は格別のお引き立てを賜り厚く御礼申し上げます。
