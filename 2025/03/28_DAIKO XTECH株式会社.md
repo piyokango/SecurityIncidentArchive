@@ -3,7 +3,7 @@
 - 2025年3月28日 (2025年3月31日更新)
 - DAIKO XTECH株式会社
 - https://www.daiko-xtech.co.jp/news/250328-2/
-- 第1報：
+- 第1報：https://github.com/piyokango/SecurityIncidentArchive/blob/main/2025/03/13_DAIKO%20XTECH%E6%A0%AA%E5%BC%8F%E4%BC%9A%E7%A4%BE.md
 
 # 本文
 当社では、2025年3月12日に不正アクセスを認識し、2025年3月13日付「セキュリティインシデント発生に伴う一部サービス停止のお知らせ」により、EDIホームページの停止についてご報告をいたしました。
