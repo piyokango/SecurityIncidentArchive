@@ -3,7 +3,7 @@
 - 2025年12月12日
 - tripla 株式会社
 - https://contents.xj-storage.jp/xcontents/AS04848/8b1d77bd/e430/48ce/b525/d0c3c0f21073/140120251212519183.pdf
-- 第1報：
+- 第1報：https://github.com/piyokango/SecurityIncidentArchive/blob/main/2025/12/08_tripla%20%E6%A0%AA%E5%BC%8F%E4%BC%9A%E7%A4%BE.md
 
 # 本文
 当社の連結子会社である PT. tripla BookandLink Indonesia（インドネシア法人）において発生した不正アクセス事象につきまして、2025 年 12 月 8 日付「連結子会社における不正アクセスの発生及び個人情報漏えいに関するお知らせ（第一報）」にて概要をご案内いたしました。
