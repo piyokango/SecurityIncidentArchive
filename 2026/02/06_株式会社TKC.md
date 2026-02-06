@@ -3,7 +3,7 @@
 - 2026年2月6日
 - 株式会社TKC
 - https://www.tkc.jp/company/topics/2026/20260206/
-- 第1報：
+- 第1報：https://github.com/piyokango/SecurityIncidentArchive/blob/main/2026/01/30_%E6%A0%AA%E5%BC%8F%E4%BC%9A%E7%A4%BETKC.md
 
 # 本文
 令和8年1月30日付けのお知らせでご案内しました、「TKC税理士ご紹介コーナー」および「HP毎月更新サービス」で使用しているサーバー（以後、「当該サーバー」と言います）に外部から不正な通信が試みられた事象につきまして、皆さまに多大なるご心配とご迷惑をお掛けしておりますことを、深くお詫び申し上げます
