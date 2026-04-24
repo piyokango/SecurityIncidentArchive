@@ -1,6 +1,6 @@
 # 公表概要
 - GitHubアカウントへの不正アクセス発生に関するお知らせとお詫び（第三報）
-- 2026年4月23日
+- 2026年4月22日
 - 株式会社CAMPFIRE
 - https://campfire.co.jp/press/2026/04/22/campfire/
 - 第2報：https://github.com/piyokango/SecurityIncidentArchive/blob/main/2026/04/14_%E6%A0%AA%E5%BC%8F%E4%BC%9A%E7%A4%BECAMPFIRE.md
