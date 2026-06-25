@@ -11,6 +11,22 @@
 - 原典URLは `http` / `https` のみリンク化し、外部リンクには `rel="noopener noreferrer"` を付与します。
 - 上場判定はJPXの東証上場銘柄一覧との正規化一致に限定します。一致しない場合は `未確認` と表示し、非上場とは断定しません。
 
+## 集計単位
+
+`scripts/build_dashboard_data.py` は、1ファイルごとの `releases` と、`事案ID` ごとにまとめた `incidents` の両方を生成します。
+
+`# 公表概要` に同じ `事案ID` を指定した複数ファイルは、事案単位では1件として集計されます。`事案ID` がないファイルは、従来どおり1ファイルを1事案として扱います。
+
+```markdown
+# 公表概要
+- 不正アクセスによる個人情報漏えいのおそれについて
+- 2026年6月10日
+- 株式会社Example
+- https://example.co.jp/news/...
+- 事案ID: example-2026-001
+- 公表種別: 初報
+```
+
 ## 上場判定データ
 
 `scripts/build_listed_companies.py` がJPXの東証上場銘柄一覧を取得し、`data/jpx_listed_companies.json` を生成します。
