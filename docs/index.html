@@ -13,11 +13,12 @@
     <div>
       <p class="eyebrow">SecurityIncidentArchive</p>
       <h1>国内インシデント公表アーカイブ Dashboard</h1>
-      <p class="lead">リポジトリ内の公表情報を集計し、月次推移・分類・検索で確認できます。上場判定はJPXの東証上場銘柄一覧との正規化一致に基づく補助情報です。一致しない場合は未確認であり、非上場とは断定しません。</p>
+      <p class="lead">リポジトリ内の公表情報を集計し、月次推移・分類・検索で確認できます。集計単位は公表リリース単位と事案単位を切り替えられます。上場判定はJPXの東証上場銘柄一覧との正規化一致に基づく補助情報です。</p>
     </div>
     <div class="meta-card" aria-live="polite">
-      <span>総件数</span>
+      <span id="totalLabel">総件数</span>
       <strong id="totalCount">-</strong>
+      <small id="unitStatus">集計単位: -</small>
       <small id="generatedAt">生成日時: -</small>
       <small id="listedDataStatus">上場データ: -</small>
     </div>
@@ -25,6 +26,7 @@
 
   <main>
     <section class="controls" aria-label="絞り込み条件">
+      <label>集計単位<select id="unitFilter"><option value="release">公表リリース単位</option><option value="incident">事案単位</option></select></label>
       <label>キーワード<input id="searchInput" type="search" autocomplete="off" placeholder="組織名、タイトル、本文、タグ、証券コードで検索"></label>
       <label>年月<select id="monthFilter"><option value="">すべて</option></select></label>
       <label>タグ<select id="tagFilter"><option value="">すべて</option></select></label>
@@ -34,7 +36,7 @@
     </section>
 
     <section class="grid" aria-label="集計グラフ">
-      <article class="panel wide"><div class="panel-title"><h2>月次推移</h2><p>公表日の年月別件数</p></div><div id="monthChart" class="chart" role="img" aria-label="月次件数グラフ"></div></article>
+      <article class="panel wide"><div class="panel-title"><h2>月次推移</h2><p id="monthChartDescription">年月別件数</p></div><div id="monthChart" class="chart" role="img" aria-label="月次件数グラフ"></div></article>
       <article class="panel"><div class="panel-title"><h2>分類</h2><p>本文キーワードから推定</p></div><div id="tagChart" class="chart" role="img" aria-label="タグ別件数グラフ"></div></article>
       <article class="panel"><div class="panel-title"><h2>組織種別</h2><p>組織名から推定</p></div><div id="orgChart" class="chart" role="img" aria-label="組織種別件数グラフ"></div></article>
       <article class="panel"><div class="panel-title"><h2>上場区分</h2><p>JPX銘柄名との照合結果</p></div><div id="listedStatusChart" class="chart" role="img" aria-label="上場区分別件数グラフ"></div></article>
@@ -42,8 +44,8 @@
     </section>
 
     <section class="panel results-panel">
-      <div class="panel-title inline"><div><h2>公表情報一覧</h2><p id="resultCount">-</p></div><button id="csvButton" type="button">表示中データをCSV保存</button></div>
-      <div class="table-wrap"><table><thead><tr><th scope="col">公表日</th><th scope="col">組織</th><th scope="col">上場区分</th><th scope="col">タイトル</th><th scope="col">タグ</th><th scope="col">リンク</th></tr></thead><tbody id="incidentRows"></tbody></table></div>
+      <div class="panel-title inline"><div><h2 id="resultsTitle">公表情報一覧</h2><p id="resultCount">-</p></div><button id="csvButton" type="button">表示中データをCSV保存</button></div>
+      <div class="table-wrap"><table><thead><tr><th scope="col">日付</th><th scope="col">組織</th><th scope="col">上場区分</th><th scope="col">公表数</th><th scope="col">タイトル</th><th scope="col">タグ</th><th scope="col">リンク</th></tr></thead><tbody id="incidentRows"></tbody></table></div>
     </section>
   </main>
 
