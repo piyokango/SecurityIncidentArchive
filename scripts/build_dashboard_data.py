@@ -181,6 +181,8 @@ def listed_status(org: str, org_type: str, listed_data: dict[str, Any], override
         return {
             "listedStatus": override.get("listedStatus", "手動確認"),
             "listedMarket": override.get("listedMarket", ""),
+            "listedIndustry33": override.get("listedIndustry33", override.get("listedIndustry", "")),
+            "listedIndustry17": override.get("listedIndustry17", ""),
             "securitiesCode": override.get("securitiesCode", ""),
             "listedName": override.get("listedName", ""),
             "listedSource": override.get("listedSource", "手動補正"),
@@ -192,6 +194,8 @@ def listed_status(org: str, org_type: str, listed_data: dict[str, Any], override
         return {
             "listedStatus": "対象外",
             "listedMarket": "",
+            "listedIndustry33": "",
+            "listedIndustry17": "",
             "securitiesCode": "",
             "listedName": "",
             "listedSource": "組織種別による判定",
@@ -204,6 +208,8 @@ def listed_status(org: str, org_type: str, listed_data: dict[str, Any], override
         return {
             "listedStatus": "上場",
             "listedMarket": safe_text(match.get("market", ""), 80),
+            "listedIndustry33": safe_text(match.get("industry33", ""), 80),
+            "listedIndustry17": safe_text(match.get("industry17", ""), 80),
             "securitiesCode": safe_text(match.get("code", ""), 20),
             "listedName": safe_text(match.get("name", ""), 120),
             "listedSource": "JPX 東証上場銘柄一覧",
@@ -214,6 +220,8 @@ def listed_status(org: str, org_type: str, listed_data: dict[str, Any], override
     return {
         "listedStatus": "未確認",
         "listedMarket": "",
+        "listedIndustry33": "",
+        "listedIndustry17": "",
         "securitiesCode": "",
         "listedName": "",
         "listedSource": "JPX 東証上場銘柄一覧",
@@ -302,6 +310,7 @@ def main() -> None:
     by_org_type: Counter[str] = Counter(item["organizationType"] for item in incidents)
     by_listed_status: Counter[str] = Counter(item["listedStatus"] for item in incidents)
     by_listed_market: Counter[str] = Counter(item["listedMarket"] or "未確認・対象外" for item in incidents)
+    by_listed_industry33: Counter[str] = Counter(item["listedIndustry33"] or "未確認・対象外" for item in incidents)
 
     payload = {
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -325,6 +334,7 @@ def main() -> None:
             "byOrganizationType": sorted_counter_rows(by_org_type, "organizationType"),
             "byListedStatus": sorted_counter_rows(by_listed_status, "listedStatus"),
             "byListedMarket": sorted_counter_rows(by_listed_market, "listedMarket"),
+            "byListedIndustry33": sorted_counter_rows(by_listed_industry33, "listedIndustry33"),
         },
         "incidents": incidents,
     }
