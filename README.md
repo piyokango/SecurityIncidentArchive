@@ -7,3 +7,21 @@
 # このアーカイブに関する連絡先
 - Bluesky: @piyokango.bsky.social
 - X: @piyokango
+
+## ダッシュボード
+
+GitHub Pages向けの静的ダッシュボードを `docs/` 配下に生成します。
+
+- 生成スクリプト: `scripts/build_dashboard_data.py`
+- 公開対象: `docs/`
+- データ: `docs/data/incidents.json`
+- 公開URL: GitHub Pages有効化後、`https://piyokango.github.io/SecurityIncidentArchive/`
+
+ローカル確認:
+
+```bash
+python scripts/build_dashboard_data.py
+python -m http.server 8000 -d docs
+```
+
+GitHub Pagesは `.github/workflows/pages.yml` により、`main` へのpushまたは手動実行で更新されます。
