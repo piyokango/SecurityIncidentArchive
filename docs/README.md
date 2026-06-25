@@ -20,8 +20,12 @@
 - `listedStatus`: `上場` / `未確認` / `対象外`
 - `securitiesCode`: 証券コード
 - `listedMarket`: 市場区分
+- `listedIndustry33`: JPXの33業種区分
+- `listedIndustry17`: JPXの17業種区分
 - `listedName`: JPX上の銘柄名
 - `listedConfidence`: 判定信頼度
+
+一覧表では出典や判定信頼度の長い説明文は表示せず、CSVには監査用に出力します。
 
 表記揺れ、子会社名、持株会社名などで手動補正が必要な場合は `data/listed_company_overrides.json` に登録します。
 
