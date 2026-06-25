@@ -32,6 +32,20 @@
 
 未登録の組織はダッシュボード上で `未登録` と表示されます。
 
+## 未登録組織の確認Issue
+
+`scripts/build_organization_candidates.py` は、アーカイブ内の組織名と `data/organization_overrides.json` を比較し、未登録組織の確認候補を生成します。
+
+GitHub Actions の `Organization metadata candidates` は、毎週または手動実行でこの候補を生成し、`[dashboard] 未登録組織の企業情報確認` Issueを1件だけ作成または更新します。
+
+このIssueに掲載されるテンプレート候補を確認し、必要な組織だけ `data/organization_overrides.json` に反映してください。
+
+ローカル生成:
+
+```bash
+python scripts/build_organization_candidates.py --output-json data/organization_candidates.json --output-md data/organization_candidates.md
+```
+
 ## ローカル確認
 
 ```bash
