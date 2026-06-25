@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
+  <meta name="referrer" content="no-referrer">
+  <title>国内インシデント公表アーカイブ Dashboard</title>
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">SecurityIncidentArchive</p>
+      <h1>国内インシデント公表アーカイブ Dashboard</h1>
+      <p class="lead">リポジトリ内の公表情報を集計し、月次推移・分類・検索で確認できます。掲載組織でインシデント発生が確定したことを示すものではないため、必ず本文と原典を確認してください。</p>
+    </div>
+    <div class="meta-card" aria-live="polite">
+      <span>総件数</span>
+      <strong id="totalCount">-</strong>
+      <small id="generatedAt">生成日時: -</small>
+    </div>
+  </header>
+
+  <main>
+    <section class="controls" aria-label="絞り込み条件">
+      <label>キーワード<input id="searchInput" type="search" autocomplete="off" placeholder="組織名、タイトル、本文、タグで検索"></label>
+      <label>年月<select id="monthFilter"><option value="">すべて</option></select></label>
+      <label>タグ<select id="tagFilter"><option value="">すべて</option></select></label>
+      <label>組織種別<select id="orgTypeFilter"><option value="">すべて</option></select></label>
+      <button id="resetButton" type="button">条件をリセット</button>
+    </section>
+
+    <section class="grid" aria-label="集計グラフ">
+      <article class="panel wide"><div class="panel-title"><h2>月次推移</h2><p>公表日の年月別件数</p></div><div id="monthChart" class="chart" role="img" aria-label="月次件数グラフ"></div></article>
+      <article class="panel"><div class="panel-title"><h2>分類</h2><p>本文キーワードから推定</p></div><div id="tagChart" class="chart" role="img" aria-label="タグ別件数グラフ"></div></article>
+      <article class="panel"><div class="panel-title"><h2>組織種別</h2><p>組織名から推定</p></div><div id="orgChart" class="chart" role="img" aria-label="組織種別件数グラフ"></div></article>
+    </section>
+
+    <section class="panel results-panel">
+      <div class="panel-title inline"><div><h2>公表情報一覧</h2><p id="resultCount">-</p></div><button id="csvButton" type="button">表示中データをCSV保存</button></div>
+      <div class="table-wrap"><table><thead><tr><th scope="col">公表日</th><th scope="col">組織</th><th scope="col">タイトル</th><th scope="col">タグ</th><th scope="col">リンク</th></tr></thead><tbody id="incidentRows"></tbody></table></div>
+    </section>
+  </main>
+
+  <footer><p>このページはGitHub Pagesで静的に配信されています。外部スクリプト・外部フォント・Cookie・トラッキングは使用していません。</p></footer>
+  <script src="assets/app.js" defer></script>
+</body>
+</html>
