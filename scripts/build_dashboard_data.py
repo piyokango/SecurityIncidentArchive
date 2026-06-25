@@ -3,7 +3,8 @@
 
 This script intentionally uses only Python's standard library. It reads the
 archive Markdown files from year/month directories and emits a static JSON file
-for GitHub Pages. No network access is performed.
+for GitHub Pages. Optional listed-company data is loaded from
+`data/jpx_listed_companies.json`, which is generated separately from JPX data.
 """
 from __future__ import annotations
 
@@ -18,7 +19,8 @@ from urllib.parse import quote, urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs" / "data" / "incidents.json"
-ORG_OVERRIDES = ROOT / "data" / "organization_overrides.json"
+LISTED_COMPANIES = ROOT / "data" / "jpx_listed_companies.json"
+LISTED_OVERRIDES = ROOT / "data" / "listed_company_overrides.json"
 DATE_RE = re.compile(r"^(20\d{2})/(\d{2})/(\d{2})_.*\.md$")
 HEADING_RE = re.compile(r"^#\s+")
 
@@ -42,22 +44,30 @@ ORG_TYPE_RULES: list[tuple[str, list[str]]] = [
     ("医療・福祉", ["病院", "クリニック", "医療", "福祉", "介護"]),
 ]
 
-DEFAULT_ORG_META = {
-    "industry": "未登録",
-    "businessType": "未登録",
-    "companySize": "未登録",
-    "source": "未登録",
-    "confidence": "none",
-    "note": "data/organization_overrides.json に手動登録すると表示されます。",
-}
+NON_COMPANY_ORG_TYPES = {"自治体・公的機関", "学校・教育", "医療・福祉"}
 
 
 def safe_text(value: str, limit: int) -> str:
     """Normalize text and cap length to keep JSON small and UI predictable."""
-    value = re.sub(r"\s+", " ", value).strip()
+    value = re.sub(r"\s+", " ", str(value)).strip()
     if len(value) <= limit:
         return value
     return value[: limit - 1].rstrip() + "…"
+
+
+def normalize_name(value: str) -> str:
+    value = str(value or "").strip()
+    replacements = {
+        "（株）": "株式会社",
+        "(株)": "株式会社",
+        "㈱": "株式会社",
+        "　": " ",
+    }
+    for old, new in replacements.items():
+        value = value.replace(old, new)
+    value = re.sub(r"\s+", "", value)
+    value = value.replace("・", "").replace("－", "-")
+    return value
 
 
 def bullet_items(lines: list[str]) -> list[str]:
@@ -98,34 +108,89 @@ def infer_org_type(org: str) -> str:
     return "その他"
 
 
-def load_org_overrides() -> dict[str, dict[str, str]]:
-    if not ORG_OVERRIDES.exists():
+def load_listed_companies() -> dict[str, Any]:
+    if not LISTED_COMPANIES.exists():
+        return {
+            "source": "JPX 東証上場銘柄一覧",
+            "sourceUrl": "",
+            "generatedAt": "",
+            "companyCount": 0,
+            "byNormalizedName": {},
+        }
+    raw = json.loads(LISTED_COMPANIES.read_text(encoding="utf-8"))
+    by_name = raw.get("byNormalizedName", {})
+    if not isinstance(by_name, dict):
+        by_name = {}
+    return {
+        "source": str(raw.get("source", "JPX 東証上場銘柄一覧")),
+        "sourceUrl": str(raw.get("sourceUrl", "")),
+        "sourcePageUrl": str(raw.get("sourcePageUrl", "")),
+        "generatedAt": str(raw.get("generatedAt", "")),
+        "companyCount": int(raw.get("companyCount", 0) or 0),
+        "byNormalizedName": by_name,
+    }
+
+
+def load_listed_overrides() -> dict[str, dict[str, str]]:
+    if not LISTED_OVERRIDES.exists():
         return {}
-    raw = json.loads(ORG_OVERRIDES.read_text(encoding="utf-8"))
+    raw = json.loads(LISTED_OVERRIDES.read_text(encoding="utf-8"))
     organizations = raw.get("organizations", {})
     if not isinstance(organizations, dict):
-        raise ValueError("data/organization_overrides.json: organizations must be an object")
-
+        raise ValueError("data/listed_company_overrides.json: organizations must be an object")
     normalized: dict[str, dict[str, str]] = {}
     for org, value in organizations.items():
-        if not isinstance(org, str) or not isinstance(value, dict):
-            continue
-        normalized[org] = {
-            "industry": safe_text(str(value.get("industry", "未登録")), 80),
-            "businessType": safe_text(str(value.get("businessType", "未登録")), 120),
-            "companySize": safe_text(str(value.get("companySize", "未登録")), 40),
-            "source": safe_text(str(value.get("source", "手動登録")), 120),
-            "confidence": safe_text(str(value.get("confidence", "manual")), 40),
-            "note": safe_text(str(value.get("note", "")), 180),
-        }
+        if isinstance(org, str) and isinstance(value, dict):
+            normalized[org] = {key: safe_text(str(val), 120) for key, val in value.items()}
     return normalized
 
 
-def organization_metadata(org: str, overrides: dict[str, dict[str, str]]) -> dict[str, str]:
-    metadata = dict(DEFAULT_ORG_META)
+def listed_status(org: str, org_type: str, listed_data: dict[str, Any], overrides: dict[str, dict[str, str]]) -> dict[str, str]:
     if org in overrides:
-        metadata.update(overrides[org])
-    return metadata
+        override = overrides[org]
+        return {
+            "listedStatus": override.get("listedStatus", "手動確認"),
+            "listedMarket": override.get("listedMarket", ""),
+            "securitiesCode": override.get("securitiesCode", ""),
+            "listedName": override.get("listedName", ""),
+            "listedSource": override.get("listedSource", "手動補正"),
+            "listedConfidence": override.get("listedConfidence", "manual"),
+            "listedNote": override.get("listedNote", "data/listed_company_overrides.json による手動補正"),
+        }
+
+    if org_type in NON_COMPANY_ORG_TYPES:
+        return {
+            "listedStatus": "対象外",
+            "listedMarket": "",
+            "securitiesCode": "",
+            "listedName": "",
+            "listedSource": "組織種別による判定",
+            "listedConfidence": "rule",
+            "listedNote": "自治体・学校・医療機関等として扱い、上場判定の対象外にしています。",
+        }
+
+    normalized = normalize_name(org)
+    match = listed_data.get("byNormalizedName", {}).get(normalized)
+    if isinstance(match, dict):
+        return {
+            "listedStatus": "上場",
+            "listedMarket": safe_text(str(match.get("market", "")), 80),
+            "securitiesCode": safe_text(str(match.get("code", "")), 20),
+            "listedName": safe_text(str(match.get("name", "")), 120),
+            "listedSource": "JPX 東証上場銘柄一覧",
+            "listedConfidence": "normalized-exact",
+            "listedNote": "JPX上場銘柄一覧の銘柄名と正規化一致しました。",
+        }
+
+    return {
+        "listedStatus": "未確認",
+        "listedMarket": "",
+        "securitiesCode": "",
+        "listedName": "",
+        "listedSource": "JPX 東証上場銘柄一覧",
+        "listedConfidence": "none",
+        "listedNote": "JPX銘柄名との完全一致・正規化一致はありませんでした。非上場とは断定しません。",
+    }
 
 
 def public_url(path: Path) -> str:
@@ -135,7 +200,7 @@ def public_url(path: Path) -> str:
     return f"https://github.com/{repo}/blob/{quote(ref)}/{encoded}"
 
 
-def parse_file(path: Path, org_overrides: dict[str, dict[str, str]]) -> dict[str, Any] | None:
+def parse_file(path: Path, listed_data: dict[str, Any], listed_overrides: dict[str, dict[str, str]]) -> dict[str, Any] | None:
     rel = path.relative_to(ROOT)
     match = DATE_RE.match(rel.as_posix())
     if not match:
@@ -169,7 +234,8 @@ def parse_file(path: Path, org_overrides: dict[str, dict[str, str]]) -> dict[str
         date = fallback_date
 
     tags = infer_tags(title, body)
-    org_meta = organization_metadata(org, org_overrides)
+    org_type = infer_org_type(org)
+    listed = listed_status(org, org_type, listed_data, listed_overrides)
     return {
         "id": rel.as_posix(),
         "date": date,
@@ -177,13 +243,8 @@ def parse_file(path: Path, org_overrides: dict[str, dict[str, str]]) -> dict[str
         "month": date[:7],
         "title": safe_text(title, 240),
         "organization": safe_text(org, 120),
-        "organizationType": infer_org_type(org),
-        "industry": org_meta["industry"],
-        "businessType": org_meta["businessType"],
-        "companySize": org_meta["companySize"],
-        "organizationMetadataSource": org_meta["source"],
-        "organizationMetadataConfidence": org_meta["confidence"],
-        "organizationMetadataNote": org_meta["note"],
+        "organizationType": org_type,
+        **listed,
         "sourceUrl": source,
         "archivePath": rel.as_posix(),
         "archiveUrl": public_url(rel),
@@ -201,36 +262,40 @@ def sorted_counter_rows(counter: Counter[str], key_name: str) -> list[dict[str, 
 
 
 def main() -> None:
-    org_overrides = load_org_overrides()
-    incidents = [item for path in sorted(ROOT.glob("20[0-9][0-9]/[0-1][0-9]/*.md")) if (item := parse_file(path, org_overrides))]
+    listed_data = load_listed_companies()
+    listed_overrides = load_listed_overrides()
+    incidents = [item for path in sorted(ROOT.glob("20[0-9][0-9]/[0-1][0-9]/*.md")) if (item := parse_file(path, listed_data, listed_overrides))]
     incidents.sort(key=lambda item: (item["date"], item["organization"], item["title"]), reverse=True)
 
     by_month: Counter[str] = Counter(item["month"] for item in incidents)
     by_year: Counter[str] = Counter(item["year"] for item in incidents)
     by_tag: Counter[str] = Counter(tag for item in incidents for tag in item["tags"])
     by_org_type: Counter[str] = Counter(item["organizationType"] for item in incidents)
-    by_industry: Counter[str] = Counter(item["industry"] for item in incidents)
-    by_business_type: Counter[str] = Counter(item["businessType"] for item in incidents)
-    by_company_size: Counter[str] = Counter(item["companySize"] for item in incidents)
+    by_listed_status: Counter[str] = Counter(item["listedStatus"] for item in incidents)
+    by_listed_market: Counter[str] = Counter(item["listedMarket"] or "未確認・対象外" for item in incidents)
 
     payload = {
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "source": "SecurityIncidentArchive",
         "total": len(incidents),
-        "organizationMetadata": {
-            "mode": "manual-overrides",
-            "sourceFile": "data/organization_overrides.json",
-            "registeredOrganizations": len(org_overrides),
-            "note": "業種・業態・規模は手動補正ファイルに登録された情報のみを反映します。未登録の組織は未登録として表示します。",
+        "listedCompanyData": {
+            "mode": "jpx-normalized-name-match",
+            "source": listed_data.get("source", "JPX 東証上場銘柄一覧"),
+            "sourceUrl": listed_data.get("sourceUrl", ""),
+            "sourcePageUrl": listed_data.get("sourcePageUrl", ""),
+            "generatedAt": listed_data.get("generatedAt", ""),
+            "listedCompanyCount": listed_data.get("companyCount", 0),
+            "overrideFile": "data/listed_company_overrides.json",
+            "overrideCount": len(listed_overrides),
+            "note": "JPX銘柄名と正規化一致した場合のみ上場とします。一致しない場合は未確認であり、非上場とは断定しません。",
         },
         "stats": {
             "byMonth": counter_to_rows(by_month, "month"),
             "byYear": counter_to_rows(by_year, "year"),
             "byTag": sorted_counter_rows(by_tag, "tag"),
             "byOrganizationType": sorted_counter_rows(by_org_type, "organizationType"),
-            "byIndustry": sorted_counter_rows(by_industry, "industry"),
-            "byBusinessType": sorted_counter_rows(by_business_type, "businessType"),
-            "byCompanySize": sorted_counter_rows(by_company_size, "companySize"),
+            "byListedStatus": sorted_counter_rows(by_listed_status, "listedStatus"),
+            "byListedMarket": sorted_counter_rows(by_listed_market, "listedMarket"),
         },
         "incidents": incidents,
     }
