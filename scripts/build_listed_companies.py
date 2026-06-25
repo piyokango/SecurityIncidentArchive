@@ -137,6 +137,19 @@ def header_index(header: list[str], patterns: list[str]) -> int:
     raise RuntimeError(f"Column not found: {patterns}")
 
 
+def optional_header_index(header: list[str], patterns: list[str]) -> int | None:
+    try:
+        return header_index(header, patterns)
+    except RuntimeError:
+        return None
+
+
+def cell(row: list[str], index: int | None) -> str:
+    if index is None or index >= len(row):
+        return ""
+    return str(row[index]).strip()
+
+
 def build_listed_companies(rows: list[list[str]], source_url: str) -> dict[str, Any]:
     header_row_index = None
     for index, row in enumerate(rows[:20]):
@@ -151,6 +164,9 @@ def build_listed_companies(rows: list[list[str]], source_url: str) -> dict[str, 
     code_i = header_index(header, ["コード"])
     name_i = header_index(header, ["銘柄名", "会社名"])
     market_i = header_index(header, ["市場・商品区分", "市場区分", "市場"])
+    industry33_i = optional_header_index(header, ["33業種区分", "33業種", "業種区分"])
+    industry17_i = optional_header_index(header, ["17業種区分", "17業種"])
+    scale_i = optional_header_index(header, ["規模区分"])
 
     companies: list[dict[str, Any]] = []
     alias_candidates: dict[str, list[dict[str, str]]] = {}
@@ -169,9 +185,19 @@ def build_listed_companies(rows: list[list[str]], source_url: str) -> dict[str, 
             "normalizedName": normalize_name(name),
             "aliases": aliases,
             "market": market,
+            "industry33": cell(row, industry33_i),
+            "industry17": cell(row, industry17_i),
+            "scaleCategory": cell(row, scale_i),
         }
         companies.append(item)
-        compact_item = {"code": code, "name": name, "market": market}
+        compact_item = {
+            "code": item["code"],
+            "name": item["name"],
+            "market": item["market"],
+            "industry33": item["industry33"],
+            "industry17": item["industry17"],
+            "scaleCategory": item["scaleCategory"],
+        }
         for alias in aliases:
             alias_candidates.setdefault(alias, []).append(compact_item)
 
