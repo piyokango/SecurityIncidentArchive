@@ -18,6 +18,7 @@ from urllib.parse import quote, urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs" / "data" / "incidents.json"
+ORG_OVERRIDES = ROOT / "data" / "organization_overrides.json"
 DATE_RE = re.compile(r"^(20\d{2})/(\d{2})/(\d{2})_.*\.md$")
 HEADING_RE = re.compile(r"^#\s+")
 
@@ -40,6 +41,15 @@ ORG_TYPE_RULES: list[tuple[str, list[str]]] = [
     ("学校・教育", ["大学", "高校", "学校", "学院", "教育"]),
     ("医療・福祉", ["病院", "クリニック", "医療", "福祉", "介護"]),
 ]
+
+DEFAULT_ORG_META = {
+    "industry": "未登録",
+    "businessType": "未登録",
+    "companySize": "未登録",
+    "source": "未登録",
+    "confidence": "none",
+    "note": "data/organization_overrides.json に手動登録すると表示されます。",
+}
 
 
 def safe_text(value: str, limit: int) -> str:
@@ -88,6 +98,36 @@ def infer_org_type(org: str) -> str:
     return "その他"
 
 
+def load_org_overrides() -> dict[str, dict[str, str]]:
+    if not ORG_OVERRIDES.exists():
+        return {}
+    raw = json.loads(ORG_OVERRIDES.read_text(encoding="utf-8"))
+    organizations = raw.get("organizations", {})
+    if not isinstance(organizations, dict):
+        raise ValueError("data/organization_overrides.json: organizations must be an object")
+
+    normalized: dict[str, dict[str, str]] = {}
+    for org, value in organizations.items():
+        if not isinstance(org, str) or not isinstance(value, dict):
+            continue
+        normalized[org] = {
+            "industry": safe_text(str(value.get("industry", "未登録")), 80),
+            "businessType": safe_text(str(value.get("businessType", "未登録")), 120),
+            "companySize": safe_text(str(value.get("companySize", "未登録")), 40),
+            "source": safe_text(str(value.get("source", "手動登録")), 120),
+            "confidence": safe_text(str(value.get("confidence", "manual")), 40),
+            "note": safe_text(str(value.get("note", "")), 180),
+        }
+    return normalized
+
+
+def organization_metadata(org: str, overrides: dict[str, dict[str, str]]) -> dict[str, str]:
+    metadata = dict(DEFAULT_ORG_META)
+    if org in overrides:
+        metadata.update(overrides[org])
+    return metadata
+
+
 def public_url(path: Path) -> str:
     repo = os.environ.get("GITHUB_REPOSITORY", "piyokango/SecurityIncidentArchive")
     ref = os.environ.get("GITHUB_REF_NAME", "main")
@@ -95,7 +135,7 @@ def public_url(path: Path) -> str:
     return f"https://github.com/{repo}/blob/{quote(ref)}/{encoded}"
 
 
-def parse_file(path: Path) -> dict[str, Any] | None:
+def parse_file(path: Path, org_overrides: dict[str, dict[str, str]]) -> dict[str, Any] | None:
     rel = path.relative_to(ROOT)
     match = DATE_RE.match(rel.as_posix())
     if not match:
@@ -129,6 +169,7 @@ def parse_file(path: Path) -> dict[str, Any] | None:
         date = fallback_date
 
     tags = infer_tags(title, body)
+    org_meta = organization_metadata(org, org_overrides)
     return {
         "id": rel.as_posix(),
         "date": date,
@@ -137,6 +178,12 @@ def parse_file(path: Path) -> dict[str, Any] | None:
         "title": safe_text(title, 240),
         "organization": safe_text(org, 120),
         "organizationType": infer_org_type(org),
+        "industry": org_meta["industry"],
+        "businessType": org_meta["businessType"],
+        "companySize": org_meta["companySize"],
+        "organizationMetadataSource": org_meta["source"],
+        "organizationMetadataConfidence": org_meta["confidence"],
+        "organizationMetadataNote": org_meta["note"],
         "sourceUrl": source,
         "archivePath": rel.as_posix(),
         "archiveUrl": public_url(rel),
@@ -149,24 +196,41 @@ def counter_to_rows(counter: Counter[str], key_name: str, value_name: str = "cou
     return [{key_name: key, value_name: value} for key, value in sorted(counter.items())]
 
 
+def sorted_counter_rows(counter: Counter[str], key_name: str) -> list[dict[str, Any]]:
+    return sorted(counter_to_rows(counter, key_name), key=lambda row: (-row["count"], row[key_name]))
+
+
 def main() -> None:
-    incidents = [item for path in sorted(ROOT.glob("20[0-9][0-9]/[0-1][0-9]/*.md")) if (item := parse_file(path))]
+    org_overrides = load_org_overrides()
+    incidents = [item for path in sorted(ROOT.glob("20[0-9][0-9]/[0-1][0-9]/*.md")) if (item := parse_file(path, org_overrides))]
     incidents.sort(key=lambda item: (item["date"], item["organization"], item["title"]), reverse=True)
 
     by_month: Counter[str] = Counter(item["month"] for item in incidents)
     by_year: Counter[str] = Counter(item["year"] for item in incidents)
     by_tag: Counter[str] = Counter(tag for item in incidents for tag in item["tags"])
     by_org_type: Counter[str] = Counter(item["organizationType"] for item in incidents)
+    by_industry: Counter[str] = Counter(item["industry"] for item in incidents)
+    by_business_type: Counter[str] = Counter(item["businessType"] for item in incidents)
+    by_company_size: Counter[str] = Counter(item["companySize"] for item in incidents)
 
     payload = {
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "source": "SecurityIncidentArchive",
         "total": len(incidents),
+        "organizationMetadata": {
+            "mode": "manual-overrides",
+            "sourceFile": "data/organization_overrides.json",
+            "registeredOrganizations": len(org_overrides),
+            "note": "業種・業態・規模は手動補正ファイルに登録された情報のみを反映します。未登録の組織は未登録として表示します。",
+        },
         "stats": {
             "byMonth": counter_to_rows(by_month, "month"),
             "byYear": counter_to_rows(by_year, "year"),
-            "byTag": sorted(counter_to_rows(by_tag, "tag"), key=lambda row: (-row["count"], row["tag"])),
-            "byOrganizationType": sorted(counter_to_rows(by_org_type, "organizationType"), key=lambda row: (-row["count"], row["organizationType"])),
+            "byTag": sorted_counter_rows(by_tag, "tag"),
+            "byOrganizationType": sorted_counter_rows(by_org_type, "organizationType"),
+            "byIndustry": sorted_counter_rows(by_industry, "industry"),
+            "byBusinessType": sorted_counter_rows(by_business_type, "businessType"),
+            "byCompanySize": sorted_counter_rows(by_company_size, "companySize"),
         },
         "incidents": incidents,
     }
