@@ -1,0 +1,4 @@
+{
+  "$schemaComment": "Manual corrections for listed-company status. JPX normalized-name matches are automatic; use this file only for aliases, subsidiaries, holding-company names, or known exceptions.",
+  "organizations": {}
+}
