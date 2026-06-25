@@ -1,0 +1,49 @@
+name: Incident grouping candidates
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 18 * * 0'
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: incident-grouping-candidates
+  cancel-in-progress: false
+
+jobs:
+  build-candidates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Build candidate report
+        run: |
+          mkdir -p .tmp
+          python scripts/build_incident_group_candidates.py --output-json .tmp/incident_group_candidates.json --output-md .tmp/incident_group_candidates.md
+      - name: Read candidate count
+        id: candidates
+        run: |
+          count=$(python -c "import json; from pathlib import Path; print(json.loads(Path('.tmp/incident_group_candidates.json').read_text(encoding='utf-8')).get('candidateCount', 0))")
+          echo "count=${count}" >> "$GITHUB_OUTPUT"
+      - name: Create or update review issue
+        if: steps.candidates.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_TITLE: "[dashboard] 事案グルーピング候補"
+        run: |
+          existing=$(gh issue list --state open --search "$ISSUE_TITLE in:title" --json number --jq '.[0].number // ""')
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --title "$ISSUE_TITLE" --body-file .tmp/incident_group_candidates.md
+          else
+            gh issue create --title "$ISSUE_TITLE" --body-file .tmp/incident_group_candidates.md
+          fi
+      - name: No candidates
+        if: steps.candidates.outputs.count == '0'
+        run: echo "No incident grouping candidates found."
