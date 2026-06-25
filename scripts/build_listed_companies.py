@@ -24,6 +24,7 @@ from xml.etree import ElementTree as ET
 
 JPX_PAGE_URL = "https://www.jpx.co.jp/markets/statistics-equities/misc/01.html"
 NS = {"a": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+CORPORATE_WORDS = ["株式会社", "有限会社", "合同会社", "合資会社", "合名会社"]
 
 
 def fetch_bytes(url: str) -> bytes:
@@ -48,12 +49,30 @@ def normalize_name(value: str) -> str:
         "(株)": "株式会社",
         "㈱": "株式会社",
         "　": " ",
+        "＆": "&",
+        "－": "-",
+        "―": "-",
+        "ー": "-",
     }
     for old, new in replacements.items():
         value = value.replace(old, new)
     value = re.sub(r"\s+", "", value)
-    value = value.replace("・", "").replace("－", "-")
-    return value
+    value = value.replace("・", "")
+    return value.upper()
+
+
+def company_name_aliases(value: str) -> set[str]:
+    normalized = normalize_name(value)
+    aliases = {normalized}
+    without_words = normalized
+    for word in CORPORATE_WORDS:
+        if without_words.startswith(word):
+            aliases.add(without_words[len(word) :])
+        if without_words.endswith(word):
+            aliases.add(without_words[: -len(word)])
+        without_words = without_words.replace(word, "")
+    aliases.add(without_words)
+    return {alias for alias in aliases if alias}
 
 
 def parse_xlsx(content: bytes) -> list[list[str]]:
@@ -133,8 +152,8 @@ def build_listed_companies(rows: list[list[str]], source_url: str) -> dict[str, 
     name_i = header_index(header, ["銘柄名", "会社名"])
     market_i = header_index(header, ["市場・商品区分", "市場区分", "市場"])
 
-    companies: list[dict[str, str]] = []
-    by_normalized_name: dict[str, dict[str, str]] = {}
+    companies: list[dict[str, Any]] = []
+    alias_candidates: dict[str, list[dict[str, str]]] = {}
     for row in rows[header_row_index + 1 :]:
         if len(row) <= max(code_i, name_i, market_i):
             continue
@@ -143,14 +162,27 @@ def build_listed_companies(rows: list[list[str]], source_url: str) -> dict[str, 
         market = str(row[market_i]).strip()
         if not code or not name:
             continue
+        aliases = sorted(company_name_aliases(name))
         item = {
             "code": code,
             "name": name,
             "normalizedName": normalize_name(name),
+            "aliases": aliases,
             "market": market,
         }
         companies.append(item)
-        by_normalized_name[item["normalizedName"]] = item
+        compact_item = {"code": code, "name": name, "market": market}
+        for alias in aliases:
+            alias_candidates.setdefault(alias, []).append(compact_item)
+
+    by_normalized_name: dict[str, dict[str, str]] = {}
+    ambiguous_aliases: dict[str, int] = {}
+    for alias, matches in alias_candidates.items():
+        unique_codes = {match["code"] for match in matches}
+        if len(unique_codes) == 1:
+            by_normalized_name[alias] = matches[0]
+        else:
+            ambiguous_aliases[alias] = len(unique_codes)
 
     return {
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -158,6 +190,8 @@ def build_listed_companies(rows: list[list[str]], source_url: str) -> dict[str, 
         "sourceUrl": source_url,
         "sourcePageUrl": JPX_PAGE_URL,
         "companyCount": len(companies),
+        "aliasCount": len(by_normalized_name),
+        "ambiguousAliasCount": len(ambiguous_aliases),
         "companies": companies,
         "byNormalizedName": by_normalized_name,
     }
@@ -178,6 +212,7 @@ def main() -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"listed_company_count={payload['companyCount']}")
+    print(f"listed_alias_count={payload['aliasCount']}")
     print(f"source_url={excel_url}")
 
 
