@@ -25,6 +25,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
+      - name: Install Excel reader for legacy JPX files
+        run: python -m pip install --disable-pip-version-check xlrd==2.0.1
+      - name: Build JPX listed-company data
+        run: python scripts/build_listed_companies.py
       - name: Build dashboard data
         run: python scripts/build_dashboard_data.py
       - name: Configure Pages
