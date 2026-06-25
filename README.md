@@ -28,17 +28,18 @@ https://piyokango.github.io/SecurityIncidentArchive/
 - 公表種別: 初報
 ```
 
-続報側も同じ `事案ID` を指定します。
+### 事案グルーピング候補
 
-```markdown
-# 公表概要
-- 不正アクセスによる個人情報漏えいのおそれに関する調査結果について
-- 2026年6月20日
-- 株式会社Example
-- https://example.co.jp/news/...
-- 事案ID: example-2026-001
-- 公表種別: 調査結果
-```
+`scripts/build_incident_group_candidates.py` は、未グループの公表リリースから同一事案の可能性がある候補を抽出します。
+
+`.github/workflows/incident-group-candidates.yml` は、手動実行または週次実行で候補レポートを作成し、候補がある場合は `[dashboard] 事案グルーピング候補` というIssueを作成または更新します。候補は自動確定ではありません。確認後、同一事案と判断できるものだけ `事案ID` を追記します。
+
+### 画面操作
+
+- 集計単位: 公表リリース単位 / 事案単位
+- 推移粒度: 年別 / 月別 / 日別
+- 表示件数: 50件 / 100件
+- JPX業種: 上場企業に付与されたJPXの33業種区分で絞り込み
 
 ### 上場企業判定
 
