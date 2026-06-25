@@ -23,6 +23,7 @@ LISTED_COMPANIES = ROOT / "data" / "jpx_listed_companies.json"
 LISTED_OVERRIDES = ROOT / "data" / "listed_company_overrides.json"
 DATE_RE = re.compile(r"^(20\d{2})/(\d{2})/(\d{2})_.*\.md$")
 HEADING_RE = re.compile(r"^#\s+")
+CORPORATE_WORDS = ["株式会社", "有限会社", "合同会社", "合資会社", "合名会社"]
 
 TAG_RULES: list[tuple[str, list[str]]] = [
     ("不正アクセス", ["不正アクセス", "第三者によるアクセス", "権限のないアクセス", "Unauthorized access", "unauthorized access"]),
@@ -62,12 +63,30 @@ def normalize_name(value: str) -> str:
         "(株)": "株式会社",
         "㈱": "株式会社",
         "　": " ",
+        "＆": "&",
+        "－": "-",
+        "―": "-",
+        "ー": "-",
     }
     for old, new in replacements.items():
         value = value.replace(old, new)
     value = re.sub(r"\s+", "", value)
-    value = value.replace("・", "").replace("－", "-")
-    return value
+    value = value.replace("・", "")
+    return value.upper()
+
+
+def company_name_aliases(value: str) -> set[str]:
+    normalized = normalize_name(value)
+    aliases = {normalized}
+    without_words = normalized
+    for word in CORPORATE_WORDS:
+        if without_words.startswith(word):
+            aliases.add(without_words[len(word) :])
+        if without_words.endswith(word):
+            aliases.add(without_words[: -len(word)])
+        without_words = without_words.replace(word, "")
+    aliases.add(without_words)
+    return {alias for alias in aliases if alias}
 
 
 def bullet_items(lines: list[str]) -> list[str]:
@@ -145,6 +164,17 @@ def load_listed_overrides() -> dict[str, dict[str, str]]:
     return normalized
 
 
+def find_listed_match(org: str, listed_data: dict[str, Any]) -> dict[str, str] | None:
+    by_name = listed_data.get("byNormalizedName", {})
+    if not isinstance(by_name, dict):
+        return None
+    for alias in company_name_aliases(org):
+        match = by_name.get(alias)
+        if isinstance(match, dict):
+            return {key: str(value) for key, value in match.items()}
+    return None
+
+
 def listed_status(org: str, org_type: str, listed_data: dict[str, Any], overrides: dict[str, dict[str, str]]) -> dict[str, str]:
     if org in overrides:
         override = overrides[org]
@@ -169,17 +199,16 @@ def listed_status(org: str, org_type: str, listed_data: dict[str, Any], override
             "listedNote": "自治体・学校・医療機関等として扱い、上場判定の対象外にしています。",
         }
 
-    normalized = normalize_name(org)
-    match = listed_data.get("byNormalizedName", {}).get(normalized)
-    if isinstance(match, dict):
+    match = find_listed_match(org, listed_data)
+    if match:
         return {
             "listedStatus": "上場",
-            "listedMarket": safe_text(str(match.get("market", "")), 80),
-            "securitiesCode": safe_text(str(match.get("code", "")), 20),
-            "listedName": safe_text(str(match.get("name", "")), 120),
+            "listedMarket": safe_text(match.get("market", ""), 80),
+            "securitiesCode": safe_text(match.get("code", ""), 20),
+            "listedName": safe_text(match.get("name", ""), 120),
             "listedSource": "JPX 東証上場銘柄一覧",
-            "listedConfidence": "normalized-exact",
-            "listedNote": "JPX上場銘柄一覧の銘柄名と正規化一致しました。",
+            "listedConfidence": "alias-exact",
+            "listedNote": "JPX上場銘柄一覧の銘柄名と、法人種別を除いた正規化名で一致しました。",
         }
 
     return {
@@ -189,7 +218,7 @@ def listed_status(org: str, org_type: str, listed_data: dict[str, Any], override
         "listedName": "",
         "listedSource": "JPX 東証上場銘柄一覧",
         "listedConfidence": "none",
-        "listedNote": "JPX銘柄名との完全一致・正規化一致はありませんでした。非上場とは断定しません。",
+        "listedNote": "JPX銘柄名との正規化一致はありませんでした。非上場とは断定しません。",
     }
 
 
@@ -279,7 +308,7 @@ def main() -> None:
         "source": "SecurityIncidentArchive",
         "total": len(incidents),
         "listedCompanyData": {
-            "mode": "jpx-normalized-name-match",
+            "mode": "jpx-corporate-suffix-normalized-match",
             "source": listed_data.get("source", "JPX 東証上場銘柄一覧"),
             "sourceUrl": listed_data.get("sourceUrl", ""),
             "sourcePageUrl": listed_data.get("sourcePageUrl", ""),
@@ -287,7 +316,7 @@ def main() -> None:
             "listedCompanyCount": listed_data.get("companyCount", 0),
             "overrideFile": "data/listed_company_overrides.json",
             "overrideCount": len(listed_overrides),
-            "note": "JPX銘柄名と正規化一致した場合のみ上場とします。一致しない場合は未確認であり、非上場とは断定しません。",
+            "note": "JPX銘柄名と、株式会社などの法人種別を除いた正規化名で一致した場合のみ上場とします。一致しない場合は未確認であり、非上場とは断定しません。",
         },
         "stats": {
             "byMonth": counter_to_rows(by_month, "month"),
