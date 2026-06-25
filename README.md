@@ -19,7 +19,9 @@ https://piyokango.github.io/SecurityIncidentArchive/
 - 証券コード
 - 市場区分
 - JPX上の銘柄名
-- 判定信頼度
+- JPXの33業種区分
+
+一覧表では、判定根拠の長い説明文は表示せず、上記の確認に必要な項目のみ表示します。CSVには出典や判定信頼度も含めます。
 
 一致しない場合は `未確認` と表示します。会社名の表記揺れや子会社・持株会社の関係があるため、`未確認` は非上場を意味しません。
 
@@ -31,6 +33,8 @@ https://piyokango.github.io/SecurityIncidentArchive/
     "株式会社Exampleサービス": {
       "listedStatus": "上場",
       "listedMarket": "プライム（内国株式）",
+      "listedIndustry33": "情報・通信業",
+      "listedIndustry17": "情報通信・サービスその他",
       "securitiesCode": "1234",
       "listedName": "株式会社Exampleホールディングス",
       "listedSource": "手動補正",
