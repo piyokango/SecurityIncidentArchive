@@ -5,50 +5,31 @@
 ## セキュリティ上の方針
 
 - 外部JavaScript、外部CSS、外部フォント、トラッキングを使用しません。
-- 依存関係はPython標準ライブラリとGitHub公式Actionsのみです。
-- アーカイブ本文や企業情報補正データはHTMLとして挿入せず、DOM APIの `textContent` 相当で表示します。
+- ブラウザ側で外部APIを呼び出さず、GitHub Actionsで生成したJSONだけを読み込みます。
+- アーカイブ本文や上場判定データはHTMLとして挿入せず、DOM APIの `textContent` 相当で表示します。
 - Content Security Policyを `index.html` に設定し、外部リソース読み込みやフォーム送信を抑制します。
 - 原典URLは `http` / `https` のみリンク化し、外部リンクには `rel="noopener noreferrer"` を付与します。
-- 業種・業態・企業規模は自動断定せず、`data/organization_overrides.json` に登録された手動確認済みデータのみを反映します。
+- 上場判定はJPXの東証上場銘柄一覧との正規化一致に限定します。一致しない場合は `未確認` と表示し、非上場とは断定しません。
 
-## 企業情報の補正
+## 上場判定データ
 
-`data/organization_overrides.json` に組織名完全一致で補正データを登録できます。
+`scripts/build_listed_companies.py` がJPXの東証上場銘柄一覧を取得し、`data/jpx_listed_companies.json` を生成します。
 
-```json
-{
-  "organizations": {
-    "株式会社Example": {
-      "industry": "情報通信業",
-      "businessType": "クラウドサービス",
-      "companySize": "中小企業",
-      "source": "手動確認",
-      "confidence": "high",
-      "note": "法人名完全一致。確認日: 2026-06-25"
-    }
-  }
-}
-```
+`scripts/build_dashboard_data.py` はこのJSONを読み込み、各公表情報に以下を付与します。
 
-未登録の組織はダッシュボード上で `未登録` と表示されます。
+- `listedStatus`: `上場` / `未確認` / `対象外`
+- `securitiesCode`: 証券コード
+- `listedMarket`: 市場区分
+- `listedName`: JPX上の銘柄名
+- `listedConfidence`: 判定信頼度
 
-## 未登録組織の確認Issue
-
-`scripts/build_organization_candidates.py` は、アーカイブ内の組織名と `data/organization_overrides.json` を比較し、未登録組織の確認候補を生成します。
-
-GitHub Actions の `Organization metadata candidates` は、毎週または手動実行でこの候補を生成し、`[dashboard] 未登録組織の企業情報確認` Issueを1件だけ作成または更新します。
-
-このIssueに掲載されるテンプレート候補を確認し、必要な組織だけ `data/organization_overrides.json` に反映してください。
-
-ローカル生成:
-
-```bash
-python scripts/build_organization_candidates.py --output-json data/organization_candidates.json --output-md data/organization_candidates.md
-```
+表記揺れ、子会社名、持株会社名などで手動補正が必要な場合は `data/listed_company_overrides.json` に登録します。
 
 ## ローカル確認
 
 ```bash
+python -m pip install xlrd==2.0.1
+python scripts/build_listed_companies.py
 python scripts/build_dashboard_data.py
 python -m http.server 8000 -d docs
 ```
