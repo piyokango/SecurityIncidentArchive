@@ -1,9 +1,15 @@
 # 公表概要
 - 【続報】サービス一時停止に関するお知らせ
 - 2026年6月17日
-- 株式会社サイバーエージェント
+- GMOタウンWiFi株式会社
 - https://ameblo.jp/dotmoney/entry-12969882101.html
-- 第1報：https://github.com/piyokango/SecurityIncidentArchive/blob/main/2026/06/11_%E6%A0%AA%E5%BC%8F%E4%BC%9A%E7%A4%BE%E3%82%B5%E3%82%A4%E3%83%90%E3%83%BC%E3%82%A8%E3%83%BC%E3%82%B8%E3%82%A7%E3%83%B3%E3%83%88.md
+
+# 事案ID
+- 2026-07-23-株式会社OCS
+
+# 公表種別
+- 続報
+- 第1報：https://github.com/piyokango/SecurityIncidentArchive/blob/main/2026/07/23_%E6%A0%AA%E5%BC%8F%E4%BC%9A%E7%A4%BEOCS.md
 
 # 本文
 いつもドットマネー・ドットギフトをご利用いただき、ありがとうございます。
