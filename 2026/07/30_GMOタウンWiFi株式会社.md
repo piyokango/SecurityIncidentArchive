@@ -5,12 +5,12 @@
 - https://ameblo.jp/dotmoney/entry-12974161885.html
 
 # 事案ID
-- 2026-06-08-GMOタウンWiFi株式会社
+- 2026-06-11-GMOタウンWiFi株式会社
 
 # 公表種別
 - 続報
-- 第1報：https://github.com/piyokango/SecurityIncidentArchive/blob/main/2026/06/11_%E6%A0%AA%E5%BC%8F%E4%BC%9A%E7%A4%BE%E3%82%B5%E3%82%A4%E3%83%90%E3%83%BC%E3%82%A8%E3%83%BC%E3%82%B8%E3%82%A7%E3%83%B3%E3%83%88.md
-- 第2報：https://github.com/piyokango/SecurityIncidentArchive/blob/main/2026/06/17_%E6%A0%AA%E5%BC%8F%E4%BC%9A%E7%A4%BE%E3%82%B5%E3%82%A4%E3%83%90%E3%83%BC%E3%82%A8%E3%83%BC%E3%82%B8%E3%82%A7%E3%83%B3%E3%83%88.md
+- 第1報：https://github.com/piyokango/SecurityIncidentArchive/blob/main/2026/06/11_GMO%E3%82%BF%E3%82%A6%E3%83%B3WiFi%E6%A0%AA%E5%BC%8F%E4%BC%9A%E7%A4%BE.md
+- 第2報：https://github.com/piyokango/SecurityIncidentArchive/blob/main/2026/06/17_GMO%E3%82%BF%E3%82%A6%E3%83%B3WiFi%E6%A0%AA%E5%BC%8F%E4%BC%9A%E7%A4%BE.md
 
 # 本文
 いつもドットマネーをご利用いただき、ありがとうございます。
