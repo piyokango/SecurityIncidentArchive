@@ -5,7 +5,7 @@
 - https://ameblo.jp/dotmoney/entry-12969882101.html
 
 # 事案ID
-- 2026-07-23-株式会社OCS
+- 2026-07-23-GMOタウンWiFi株式会社
 
 # 公表種別
 - 続報
