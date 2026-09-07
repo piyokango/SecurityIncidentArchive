@@ -5,7 +5,7 @@
 - https://www.daiko-xtech.co.jp/group/dnl/news/p/852
 
 # 事案ID
-- 2026-08-19
+- 2026-08-19-DAIKO NEXT LINK株式会社
 
 # 公表種別
 - 初報
